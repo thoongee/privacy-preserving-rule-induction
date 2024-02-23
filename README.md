@@ -20,12 +20,12 @@ Costs such as communication and time might be different which is represented in 
 - run.sh : shell script for running the test
 
 ## Key File Setting
-
+```
 keys_FGb
 ├─public_keypack
 │  └─PK
 └─secret_keypack
-
+```
 - When you run the code for the first time, you need to change **`generated_keys=True`** in the specified section of the **`main.py`** file. This change is necessary for the key file to be generated. It is recommended to set it to **`True`** only for the initial run, and then switch it back to **`False`** once the **`keys_FGb`** folder has been created.
 
 ```bash
