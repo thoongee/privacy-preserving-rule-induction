@@ -1,0 +1,8 @@
+{
+  "ndata": 150,
+  "n": 10,
+  "d": 4,
+  "t": 3,
+  "train_ndata": 100,
+  "test_ndata": 50
+}

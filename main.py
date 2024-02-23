@@ -41,7 +41,7 @@ test_ori = pd.read_csv(sys.argv[5])
 
 qqq = int(sys.argv[7])
 
-json_path = './JSON'
+json_path = './JSON/'
 mod.save_metadata_json_eval(df, train, json_path)
 
 

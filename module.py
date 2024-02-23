@@ -100,7 +100,7 @@ def get_smallest_pow_2(x: int) -> int:
     return 1 << (x - 1).bit_length()
 
 def left_rotate_reduce(context,data,gs,interval):
-    print('--------left_rotate_reduce 입력암호문 레벨------ ;',data.level)
+    # print('--------left_rotate_reduce 입력암호문 레벨------ ;',data.level)
     m0 = heaan.Block(context,encrypted = False, data = [0]*context.num_slots)
     res = m0.encrypt()
     
