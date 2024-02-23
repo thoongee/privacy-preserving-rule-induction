@@ -69,10 +69,9 @@ model_path = sys.argv[6] + '/'
 print(" *** *** *** Training *** *** ***")
 
 start = time.time()
-if train_ndata < num_slot:
-    mod.Rule_generation(model_path, train, train_ndata, n,d,t,logN,context,a)
-else:
-    mod.Rule_generation_mult(model_path, train, train_ndata, n,d,t,logN,context,a)
+
+mod.Rule_generation(model_path, train, train_ndata, n,d,t,logN,context,a)
+
 end = time.time()
 print()
 print('!!!!!!! Rule_generation time !!!!!!! ',f"{end - start:.8f} sec")
