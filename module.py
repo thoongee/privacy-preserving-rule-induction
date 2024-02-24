@@ -347,7 +347,7 @@ def Rule_generation(model_path, train, train_ndata, n,d,t,logN,context,qqq):
         print()
         
         start = time.time()
-        encoding_rule = change_rule(g, g_list, cy, n,d,t,logN,context)
+        encoding_rule = change_rule(g_list, cy, n,d,t,logN,context)
         end = time.time()
         print('========change_rule result ========')
         print_ctxt(encoding_rule,n*d)
@@ -1938,9 +1938,13 @@ def data_update_5(g_list, c_sum, train_ctxt, label_ctxt,n,d,t,logN,context):
     return train_ctxt, label_ctxt
 
 #8
-def change_rule(g, g_list, cy, n,d,t,logN,context):
+def change_rule(g_list, cy, n,d,t,logN,context):
     print(' --- change_rule --- ')
     real_time = 0
+    
+    for i in range(t):
+        print('---g_list[',i,']:-------')
+        print_ctxt(g_list[i],10)
     
     # m0 = heaan.Message(logN-1, 0)
     # encoding_rule = heaan.Ciphertext(context)
@@ -1948,20 +1952,19 @@ def change_rule(g, g_list, cy, n,d,t,logN,context):
     # encoding_rule.to_device()
     m0 = heaan.Block(context,encrypted = False, data=[0]*context.num_slots)
     encoding_rule = m0.encrypt(inplace=False)
+    
+    # emtpy_msg = heaan.Block(context,encrypted = False)
+    # tmp_rot = emtpy_msg.encrypt(inplace=False)
+    
+    # tmp = emtpy_msg.encrypt(inplace=False)
     # tmp_rot = heaan.Ciphertext(context)
     # tmp = heaan.Ciphertext(context)
-    # print_ctxt_1(cy,dec,sk,logN,t)
-    # print_ctxt_1(g,dec,sk,logN,n*d)
-    
-    # print_ctxt_1(g_list[i],dec,sk,logN,t)
-    # print_ctxt_1(tmp_rot,dec,sk,logN,t*n*d)
-    # print_ctxt_1(tmp,dec,sk,logN,t*n*d)
   
     start = time.time()
     for i in range(n*d):
         # right_rotate(cy, t*i, tmp_rot,eval)
         # mult(g_list[i], tmp_rot, tmp, eval)
-        tmp_rot = cy.__lshift__(t*i)
+        tmp_rot = cy.__rshift__(t*i)
         tmp = g_list[i] * tmp_rot
         check_boot(tmp)
         
@@ -1980,27 +1983,12 @@ def change_rule(g, g_list, cy, n,d,t,logN,context):
 # ================ Inference =================
 # ============================================
 def inference(test, model_path,d,n,t,logN,context,qqq):
-    # evaluation 수행!
-    
-    # test_ = test.copy()
-    # for i in range(1, t+1):
-    #     test_ = test_.drop(f'label_{i}', axis=1)
-        
-    # start = time.time()
-    # cy = load_cy(model_path,logN,context,pk,enc)
-    # end = time.time()
-    # print()
-    # print('!!!!!!! load_cy time !!!!!!! ',f"{end - start:.8f} sec")
-    # print()
+
     start = time.time()
     cy = load_rule(model_path,context,qqq)
     end = time.time()
     print()
     print('!!!!!!! load_rule time !!!!!!! ',f"{end - start:.8f} sec")
-    print()
-    
-    print()
-    print('∂∇∂ … input_ctxt … ∂∇∂')
     print()
     
     test_ = test.copy()
@@ -2063,7 +2051,9 @@ def inference(test, model_path,d,n,t,logN,context,qqq):
         # target.to_host()
         # dec.decrypt(target, sk, return_y)
         return_y = target.decrypt()
-        findmax = list(np.round(return_y).real)[:t]
+        findmax=[]
+        for i in range(t):
+            findmax.append(np.round(return_y[i].real))
         
         start = time.time()
         y = find_max_y_plain(findmax,d,n,t)
@@ -2073,7 +2063,7 @@ def inference(test, model_path,d,n,t,logN,context,qqq):
         print()
         
         
-        # cy_hat_list = []
+        cy_hat_list = []
         for i in range(t):
             if round(y[i].real) == 0:
                 pass
