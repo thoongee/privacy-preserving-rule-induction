@@ -44,7 +44,7 @@ def print_ctxt(c,size):
 def print_ctxt_1(c,size):
     m = c.decrypt(inplace=False)
     for i in range(size):
-        if np.abs(m[i].real) < 0.001:
+        if np.abs(m[i].real) < 0.0001:
             pass
         else:
             print(i,m[i])
@@ -268,8 +268,8 @@ def Rule_generation(model_path, train, train_ndata, n,d,t,logN,context,qqq):
     
     i=0
     # for i in range((n*d)):
-    for i in range((n*d)-round(n*d*1/3)):
-    # for i in range(2):
+    # for i in range((n*d)-round(n*d*1/3)):
+    for i in range(10):
         
         print('feature > >> > ',i)
         print()
@@ -280,7 +280,7 @@ def Rule_generation(model_path, train, train_ndata, n,d,t,logN,context,qqq):
         # print('==frequency ctxt==')
         # print_ctxt(frequency,n*d)
         print('==fre label ctxt==')
-        print_ctxt(fre_label,n*d)
+        print_ctxt_1(fre_label,n*d)
         print()
         print('≫≫≫≫≫≫ measure_frequency time ≪≪≪≪≪≪ ',f"{end - start:.8f} sec")
         print()
@@ -288,50 +288,41 @@ def Rule_generation(model_path, train, train_ndata, n,d,t,logN,context,qqq):
         start = time.time()
         g, g_list = calculate_Gini(train_ndata, frequency, fre_label, n,d,t,logN,context)
         #g : gini 값 가장 작은 slot만 1 나머지 0
-        #g_list : g_list[0] = g의 0번째 슬롯 값을 전체에 복사해 둔 암호문
+        #g_list : g_list[0] = g의 0번째 슬롯 값을 전체에 복사해 둔 암호문 (n*d 개 있음)
          
         end = time.time()
         print('========calculate_Gini result ========')
-        print_ctxt(g,n*d)
+        print_ctxt_1(g,n*d)
         print()
         print('≫≫≫≫≫≫ calculate_Gini time ≪≪≪≪≪≪ ',f"{end - start:.8f} sec")
-        # for i in range(n*d):
-            # print(i)
-            # print_ctxt_1(g_list[i],dec,sk,logN,n*d)
-        print()
+        for i in range(n*d):
+            print('---g_list[',i,']:-------')
+            print_ctxt_1(g_list[i],n*d)
         
         start = time.time()
         y_cy, cy, c_cy, c_sum = find_label(train_ndata, g_list, train_ctxt, label_ctxt,n,d,t,logN,context)
+        # left rotate reduce 에서 0이면 작은 음숫값 생기는 변수 : y_cy -> is_real에만 사용됌 -> 그런데 cy값이랑 곱해지면서 그 부분은 0 이랑 곱해져서 괜찮음. (영향x)
         end = time.time()
         print('========find_label result ========')
         print('==y_cy==')
-        print_ctxt(y_cy,n*d)
+        print_ctxt_1(y_cy,n*d)
         print('==cy==')
-        print_ctxt(cy,t+3)
+        print_ctxt_1(cy,t+3)
         print('==c_cy==')
-        print_ctxt(c_cy,n*d)
+        print_ctxt_1(c_cy,n*d)
         print('==c_sum==')
-        print_ctxt(c_sum,n*d)
+        print_ctxt_1(c_sum,n*d)
 
         print()
         print('≫≫≫≫≫≫ find_label time ≪≪≪≪≪≪ ',f"{end - start:.8f} sec")
         print()
         start = time.time()
-        ca = isReal_1(y_cy, cy,context)
+        ca = isReal_1(y_cy, cy,context) # 데이터가 있을때 만들어진 rule 이면 1 아니면 0
         end = time.time()
         print('========isreal result ========')
-        print_ctxt(ca,n*d)
+        print_ctxt_1(ca,n*d)
         print()
         print('≫≫≫≫≫≫ isReal time ≪≪≪≪≪≪ ',f"{end - start:.8f} sec")
-        print()
-        
-        start = time.time()
-        one_rule = create_rule(g, c_cy,n,d,logN,context)
-        end = time.time()
-        print('========create_rule result ========')
-        print_ctxt(one_rule,n*d)
-        print()
-        print('≫≫≫≫≫≫ create_rule time ≪≪≪≪≪≪ ',f"{end - start:.8f} sec")
         print()
         
         start = time.time()
@@ -350,7 +341,7 @@ def Rule_generation(model_path, train, train_ndata, n,d,t,logN,context,qqq):
         encoding_rule = change_rule(g_list, cy, n,d,t,logN,context)
         end = time.time()
         print('========change_rule result ========')
-        print_ctxt(encoding_rule,n*d)
+        print_ctxt_1(encoding_rule,num_slot)
         print()
         print('≫≫≫≫≫≫ change_rule time ≪≪≪≪≪≪ ',f"{end - start:.8f} sec")
         print()
@@ -364,8 +355,8 @@ def Rule_generation(model_path, train, train_ndata, n,d,t,logN,context,qqq):
         check_boot(one_rule)
         Rule = Rule + one_rule
         end = time.time()
-        print('=====rule ! ! !======')
-        print_ctxt_1(one_rule,n*d)
+        print('=====encoding_rule * ca = one_rule ! ! !======')
+        print_ctxt_1(one_rule,num_slot)
         # print()
         print('≫≫≫≫≫≫ rule_add time ≪≪≪≪≪≪ ',f"{end - start:.8f} sec")
         print()
@@ -603,10 +594,7 @@ def calculate_Gini(train_ndata, frequency, fre_label, n,d,t,logN,context):
     # mult(tmp, tmp, square_total, eval)
     end = time.time()
     real_time += end-start
-    # print_ctxt(tmp,dec,sk,logN,5)
-    # print_ctxt(fre_label,dec,sk,logN,5)
-    # print_ctxt(square_total,dec,sk,logN,5)
-    # print_ctxt(frequency[0],dec,sk,logN,5)
+
 
     # gini = heaan.Ciphertext(context)
     # gini.to_device()
@@ -629,9 +617,7 @@ def calculate_Gini(train_ndata, frequency, fre_label, n,d,t,logN,context):
 
     # eval.sub(square_total, square_label, gini)
     gini = square_total - square_label
-    # print('### gini')
-    # print_ctxt(gini,dec,sk,logN,n*d)
-    # print()
+
 
     # min_gini = heaan.Ciphertext(gini)
     # min_gini.to_device()
@@ -685,7 +671,6 @@ def calculate_Gini(train_ndata, frequency, fre_label, n,d,t,logN,context):
         # eval.left_rotate_reduce(tmp, 1, num_slot, tmp)
         tmp = left_rotate_reduce(context,tmp,num_slot,1)
         
-        # tmp = tmp * m100 ## 진아 추가
         g_list.append(tmp)
     end = time.time()
     real_time += (end-start)-etc_time
@@ -696,10 +681,10 @@ def calculate_Gini(train_ndata, frequency, fre_label, n,d,t,logN,context):
 def findMinPos(c, context,logN,d,n,n_comp):
 
     print(' ======findMinPos 입력암호문==== ======')
-    print_ctxt(c,n*d)
+    print_ctxt_1(c,n*d)
     cmin = findMin4(c,context,logN,d,n,n_comp)
     print(' ====== findMin4 결과암호문 ======')
-    print_ctxt(cmin,n*d)
+    print_ctxt_1(cmin,n*d)
     # os.system('nvidia-smi -q -d memory') 
     # print(' ====== ====== ======')
     # check_boot(cmin, he)
@@ -751,7 +736,7 @@ def findMinPos(c, context,logN,d,n,n_comp):
     # heaan.math.approx.discrete_equal_zero(he, c_red, c_out)
     c_out = selectRandomOnePos(c_red,context,n_comp) # 같은 min값 잇으면 하나만 랜덤으로 고르기
     print('==========selectRandomOnePos 결과암호문 ===================')
-    print_ctxt(c_out,d*n)
+    print_ctxt_1(c_out,d*n)
 
     # cmin = None
     # cmin.to_host()
@@ -1215,7 +1200,7 @@ def findMin4(c, context, logN, d, n, n_comp):
 # in 3
 def selectRandomOnePos(c_red,context,ndata):
     print('=======selectRandomOnePOs 입력암호문 ==========')
-    print_ctxt(c_red,ndata)
+    print_ctxt_1(c_red,ndata)
     # eval_.bootstrap(c_red, c_red)
     # m0 = heaan.Message(logN-1,0)
     # c_sel = heaan.Ciphertext(context)
@@ -1330,7 +1315,7 @@ def find_label(train_ndata, g_list, train_ctxt, label_ctxt,n,d,t,logN,context):
         # mult(tmp, m100, tmp, eval)
         # right_rotate(tmp, i, tmp, eval)
         print('-------before left rotate reduce---------')
-        print_ctxt(tmp,train_ndata)
+        print_ctxt_1(tmp,train_ndata)
         ## 진아 변경 : tmp -> tmp_after_rot
         tmp_after_rot = left_rotate_reduce(context,tmp,train_ndata,1) # train_ndata : train data row수
         tmp_after_rot = tmp_after_rot * m100
@@ -1361,6 +1346,8 @@ def find_label(train_ndata, g_list, train_ctxt, label_ctxt,n,d,t,logN,context):
 
     cy = findMaxPos(target,context,logN,d,n,t) # 어떤 라벨 값이 제일 많은지 그 위치를 담고 있음 (앞에서 t개의 슬롯 중 하나만 1)
     check_boot(cy)
+    print(' *** cy')
+    print_ctxt(cy,t)
     # eval.bootstrap(cy, cy)
     end = time.time()
     real_time += end-start
@@ -1368,8 +1355,8 @@ def find_label(train_ndata, g_list, train_ctxt, label_ctxt,n,d,t,logN,context):
     # print(' *** target')
     # print_ctxt(target,dec,sk,logN,t)
     # print()
-    print(' ========after findMaxPos =========')
-    print_ctxt(cy,n*d)
+    # print(' ========after findMaxPos =========')
+    # print_ctxt(cy,n*d)
     # print()
 
     # cy 0 1 0 0 ... 이면 2 0 0 0 ...으로 바꾸기 = c_cy (원핫인코딩 -> 값)
@@ -1377,7 +1364,10 @@ def find_label(train_ndata, g_list, train_ctxt, label_ctxt,n,d,t,logN,context):
     start = time.time()
     # eval.left_rotate_reduce(cy,1,t,c_cy)
     # eval.left_rotate_reduce(c_cy,1,t,c_cy)
-    c_cy = left_rotate_reduce(context,cy,t,1)
+    cy_dupli = cy
+    c_cy = left_rotate_reduce(context,cy_dupli,t,1)
+    print(' *** cy after make c_cy')
+    print_ctxt(cy,t)
     
     c_cy = left_rotate_reduce(context,c_cy,t,1)
 
@@ -1387,13 +1377,8 @@ def find_label(train_ndata, g_list, train_ctxt, label_ctxt,n,d,t,logN,context):
     end = time.time()
     real_time += end-start
     print('find_label real time ',f"{real_time:.8f} sec")
-    print(' *** c_cy')
-    print_ctxt(c_cy,t)
     print()
-    print(' *** y_cy')
-    print_ctxt(y_cy,t)
-    print()
-    
+ 
     return y_cy, cy, c_cy, c_sum
 
 # in 4
@@ -1412,7 +1397,7 @@ def findMaxPos(c,context,logN,d,n,ndata):
     check_boot(cmax)
     # he.right_rotate_reduce(cmax,1,num_slot,cmax)
     print('------before right_rotate_reduce----------')
-    print_ctxt(cmax,n*d)
+    print_ctxt_1(cmax,n*d)
     
     cmax = right_rotate_reduce(context,cmax,num_slot,1)
     
@@ -1823,67 +1808,21 @@ def isReal_1(y_cy, cy,context):
     print('----inverse ca-------')
     print_ctxt(inv,10)
  
-    ca = ca * inv
-    check_boot(ca)
+    # ca = ca * inv
+    tmp_ca = ca * inv
+    
+    check_boot(tmp_ca)
 
-
-    ca = ca * ca
-    check_boot(ca)
+    # ca = ca * ca
+    res_ca = tmp_ca * tmp_ca
+    check_boot(res_ca)
 
     end = time.time()
     real_time += end-start
     print('isReal real time ',f"{real_time:.8f} sec")
-    return ca
+    return res_ca
 
 #6
-def create_rule(g, c_cy,n,d,logN,context):
-    print(' --- create_rule --- ')
-    real_time = 0
-    print('---create rule input 1----')
-    print_ctxt(g,n*d) # cv
-    print('---create rule input 2----')
-    print_ctxt(c_cy,n*d) # cy
-    # cy: 가장 큰 값이 있는 위치 0 1 0 0 ... (ex. X3=1 일때 어떤 라벨값이 가장 많은지 그 위치)
-    # cy 0 1 0 0 ... 이면 2 0 0 0 ...으로 바꾸기 = c_cy (원핫인코딩 -> 값)
-    # g : gini 값 가장 작은 slot만 1 나머지 0 (밑에선 cv라고 표현)
-    
-    # Rule 하나 생성
-    
-    # cv랑 cy랑 곱해야 원하는 위치에 있을 수 있음
-    # 여기서의 cv는 곧 MinPos
-    # cy : 2 0 0 0 0 0 ....
-    # MinPos : 0 0 0 0 1 0
-
-    # cy를 n × d만큼 복사 후 MinPos와 곱함
-    # 2 2 2 2 2 2
-    # 0 0 0 0 1 0
-    # 0 0 0 0 2 0
-    # 진아 ; cy값을 MinPos 위치로 이동시킨다고 생각하면 되려나?
-
-    # rule 한 개 완성
-    
-    # one_rule = heaan.Ciphertext(context)
-    # one_rule.to_device()
-
-    start = time.time()
-    # eval.right_rotate_reduce(c_cy, 1, n*d, c_cy)
-    c_cy = right_rotate_reduce(context,c_cy,n*d,1)
-    
-    # print_ctxt_1(tmp,dec,sk,logN,n*d)
-    # print_ctxt_1(one_rule,dec,sk,logN,n*d)
-
-    # mult(g, c_cy, one_rule, eval)
-    one_rule = g * c_cy
-    check_boot(one_rule)
-    # print('one rule !! !! ')
-    # print_ctxt_1(one_rule,dec,sk,logN,n*d)
-    # print()
-    end = time.time()
-    real_time += end-start
-    print('create_rule real time ',f"{real_time:.8f} sec")
-    return one_rule
- 
-#7
 def data_update_5(g_list, c_sum, train_ctxt, label_ctxt,n,d,t,logN,context):
     print(' --- data_update --- ')
     real_time = 0
@@ -1937,14 +1876,16 @@ def data_update_5(g_list, c_sum, train_ctxt, label_ctxt,n,d,t,logN,context):
     
     return train_ctxt, label_ctxt
 
-#8
+#7
 def change_rule(g_list, cy, n,d,t,logN,context):
-    print(' --- change_rule --- ')
+    print(' ====== change_rule ======= ')
     real_time = 0
+    print('----cy----')
+    print_ctxt_1(cy,n*d)
     
-    for i in range(t):
+    for i in range(n*d):
         print('---g_list[',i,']:-------')
-        print_ctxt(g_list[i],10)
+        print_ctxt_1(g_list[i],n*d)
     
     # m0 = heaan.Message(logN-1, 0)
     # encoding_rule = heaan.Ciphertext(context)
