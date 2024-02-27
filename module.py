@@ -10,6 +10,7 @@ from pathlib import Path
 import warnings
 warnings.filterwarnings('ignore')
 import math
+import pickle
 
 logN=16
 os.environ["OMP_NUM_THREADS"] = "32"  # set the number of CPU threads to use for parallel regions : 32
@@ -267,9 +268,9 @@ def Rule_generation(model_path, train, train_ndata, n,d,t,logN,context,qqq):
     Rule = m0.encrypt(inplace=False)
     
     i=0
-    # for i in range((n*d)):
+    for i in range((n*d)):
     # for i in range((n*d)-round(n*d*1/3)):
-    for i in range(10):
+    # for i in range(10):
         
         print('feature > >> > ',i)
         print()
@@ -297,7 +298,7 @@ def Rule_generation(model_path, train, train_ndata, n,d,t,logN,context,qqq):
         print('≫≫≫≫≫≫ calculate_Gini time ≪≪≪≪≪≪ ',f"{end - start:.8f} sec")
         for i in range(n*d):
             print('---g_list[',i,']:-------')
-            print_ctxt_1(g_list[i],n*d)
+            print_ctxt(g_list[i],n*d)
         
         start = time.time()
         y_cy, cy, c_cy, c_sum = find_label(train_ndata, g_list, train_ctxt, label_ctxt,n,d,t,logN,context)
@@ -305,13 +306,13 @@ def Rule_generation(model_path, train, train_ndata, n,d,t,logN,context,qqq):
         end = time.time()
         print('========find_label result ========')
         print('==y_cy==')
-        print_ctxt_1(y_cy,n*d)
+        print_ctxt(y_cy,t+3)
         print('==cy==')
-        print_ctxt_1(cy,t+3)
+        print_ctxt(cy,t+3)
         print('==c_cy==')
-        print_ctxt_1(c_cy,n*d)
+        print_ctxt(c_cy,t+3)
         print('==c_sum==')
-        print_ctxt_1(c_sum,n*d)
+        print_ctxt(c_sum,t+3)
 
         print()
         print('≫≫≫≫≫≫ find_label time ≪≪≪≪≪≪ ',f"{end - start:.8f} sec")
@@ -406,7 +407,6 @@ def input_training(train,train_ndata, n,d,t,logN,context):
         # len(x)
         mess = heaan.Block(context, data = x, encrypted=False)
         x_tmp = mess.encrypt(inplace=False)
-        train_ctxt.append(x_tmp)
         
         if t > 3:
             x_tmp = x_tmp * (1/t)
@@ -1316,6 +1316,17 @@ def find_label(train_ndata, g_list, train_ctxt, label_ctxt,n,d,t,logN,context):
         # right_rotate(tmp, i, tmp, eval)
         print('-------before left rotate reduce---------')
         print_ctxt_1(tmp,train_ndata)
+        
+        # tmp_dec = tmp.decrypt(inplace=False)
+        # ### debugging
+        # save = []
+        # for j in range(num_slot):
+        #     save.append(tmp_dec[j].real)
+        # # 리스트를 pickle 파일로 저장
+        # file_name = 'tmp_'+str(i)+'.pickle'
+        # with open(file_name, 'wb') as f:
+        #     pickle.dump(save, f)
+        
         ## 진아 변경 : tmp -> tmp_after_rot
         tmp_after_rot = left_rotate_reduce(context,tmp,train_ndata,1) # train_ndata : train data row수
         tmp_after_rot = tmp_after_rot * m100
@@ -1328,10 +1339,9 @@ def find_label(train_ndata, g_list, train_ctxt, label_ctxt,n,d,t,logN,context):
 
     target = y_cy
     print(' =======y_cy before scaling===========')
-    print_ctxt(y_cy,t) # 진아; t개가 다 음수값이 나오는데 맞아..?
+    print_ctxt(y_cy,t) 
     
     ## scaling
-    # mult(target, 1/(train_ndata), target, eval)
     target = target * (1/train_ndata) 
     print(' =======y_cy after scaling===========')
     print_ctxt(target,t)
@@ -1367,7 +1377,7 @@ def find_label(train_ndata, g_list, train_ctxt, label_ctxt,n,d,t,logN,context):
     cy_dupli = cy
     c_cy = left_rotate_reduce(context,cy_dupli,t,1)
     print(' *** cy after make c_cy')
-    print_ctxt(cy,t)
+    print_ctxt(cy_dupli,t)
     
     c_cy = left_rotate_reduce(context,c_cy,t,1)
 
@@ -1379,7 +1389,7 @@ def find_label(train_ndata, g_list, train_ctxt, label_ctxt,n,d,t,logN,context):
     print('find_label real time ',f"{real_time:.8f} sec")
     print()
  
-    return y_cy, cy, c_cy, c_sum
+    return y_cy, cy_dupli, c_cy, c_sum
 
 # in 4
 def findMaxPos(c,context,logN,d,n,ndata):
@@ -1441,7 +1451,7 @@ def findMaxPos(c,context,logN,d,n,ndata):
     c_out=selectRandomOnePos(c_red,context,ndata)
     # print("selRandOne cmin:",c_out.level)
     print("=============findMaxPos result :")
-    print_ctxt(c_out,ndata)
+    print_ctxt_1(c_out,num_slot)
 
     return c_out
 
@@ -1512,12 +1522,12 @@ def findMax4(c, context, logN, d,n,ndata):
     ctmp2 = c6.__rshift__(5*ndata//4)
     ctmp1 = ctmp1 + ctmp2
     
-    ## 
-    ##print("approxSign input")
-    ##print_ctxt(ctmp1,dec,sk,17,d*n)
+
   
     c0 = ctmp1.sign(inplace = False, log_range=0) ## input ctxt range : -1 ~ 0 (log value)
+    
     check_boot(c0)
+
     c0_c = c0
 
     mkall = heaan.Block(context,encrypted = False, data=[1]*num_slot)
@@ -1537,7 +1547,7 @@ def findMax4(c, context, logN, d,n,ndata):
     
     ## Step 6..
     # print("step 6")
-    ## Step 6..
+
     mk1=msg1
 
     # print("step 6-1")
@@ -1568,11 +1578,10 @@ def findMax4(c, context, logN, d,n,ndata):
     mk6= heaan.Block(context,encrypted = False, data=m)
     
     ## Step 7
-    # print("step 7")
 
     c_neg = c0.__neg__()
     c_neg = c_neg+mkall
-
+    print_ctxt(c_neg,10)
     ### When max=a
     ## ctmp1 = a>b
  
@@ -1593,7 +1602,7 @@ def findMax4(c, context, logN, d,n,ndata):
     
     ## ctmp2 = a>c
 
-    ctmp2 = c0 * mk5
+    ctmp2 = c0 * mk5 
     check_boot(ctmp2)
     ctmp2 = ctmp2.__lshift__(ndata)
     
@@ -1607,7 +1616,7 @@ def findMax4(c, context, logN, d,n,ndata):
     check_boot(ctmp1)
 
     ctmp2 = c0 * mk2
-    check_boot(ctmp1)
+    check_boot(ctmp2)
 
     ctmp2 = ctmp2.__lshift__(ndata//4)
 
@@ -1650,7 +1659,7 @@ def findMax4(c, context, logN, d,n,ndata):
 
     ctmp2 = c0 * mk4
     check_boot(ctmp2)
-    ctmp2 = ctmp2.__lshift__(ndata*3//4)
+    ctmp2 = ctmp2.__lshift__(3*ndata//4)
     
     cda = ctmp2
     ctmp1 = ctmp1 * ctmp2
@@ -1658,7 +1667,7 @@ def findMax4(c, context, logN, d,n,ndata):
 
     ctmp2 = c_neg * mk6
     check_boot(ctmp2)
-    ctmp2 = ctmp2.__lshift__(ndata*5//4)
+    ctmp2 = ctmp2.__lshift__(5*ndata//4)
  
     ccd= ctmp1 * ctmp2
     check_boot(ccd)
@@ -1669,7 +1678,6 @@ def findMax4(c, context, logN, d,n,ndata):
     ccc = ccc * cc
     check_boot(ccc)
     ccd = ccd * cd
-    
     check_boot(ccd)
    
     cout = cca
@@ -1687,7 +1695,7 @@ def findMax4(c, context, logN, d,n,ndata):
  
     cneq = cneq + mkall
    
-    cneq_da = cneq.__lshift__(ndata*3//4)
+    cneq_da = cneq.__lshift__((3*ndata)//4)
    
     cneq_da = cneq_da * mk1
     check_boot(cneq_da)
@@ -1699,16 +1707,17 @@ def findMax4(c, context, logN, d,n,ndata):
 
     ceq_ab = ceq * mk1
     check_boot(ceq_ab)
+    
     ceq_bc = ceq.__lshift__(ndata//4)
     ceq_bc = ceq_bc * mk1
-
+    check_boot(ceq_bc)
+    
     ceq_cd = ceq.__lshift__(ndata//2)
     ceq_cd = ceq_cd * mk1
-
+    check_boot(ceq_cd)
+    
     ceq_da = cneq_da.__neg__()
     ceq_da = ceq_da + mk1
-    check_boot(ceq_bc)
-    check_boot(ceq_cd)
     check_boot(ceq_da)
 
     ## Need to check (a=b)(b=c)(c>d)
@@ -1737,7 +1746,8 @@ def findMax4(c, context, logN, d,n,ndata):
     
     ## (a=b)(d=a)(b>c)
 
-    ctmp1 = ceq_ab + ceq_da
+    ctmp1 = ceq_ab * ceq_da
+    check_boot(ctmp1)
     ctmp1 = ctmp1 * c_bc
     check_boot(ctmp1)
     c_cond3 = c_cond3 + ctmp1
@@ -1791,6 +1801,10 @@ def isReal_1(y_cy, cy,context):
 
   
     start = time.time()
+    print('----cy-------')
+    print_ctxt(cy,10)
+    print('----y_cy-------')
+    print_ctxt(y_cy,10)
  
     ca = cy * y_cy
     check_boot(ca)
@@ -1802,8 +1816,11 @@ def isReal_1(y_cy, cy,context):
 
     print('----ca after left rotate reduce-------')
     print_ctxt(ca,10)
+    # ca= ca * 10000
    
-    inv = ca.inverse(greater_than_one=True) # 진아; y 개수니까 True 맞겠지?
+    inv = ca.inverse(greater_than_one=True) # 진아; y 개수인데, 이게 0일수도 있고, 1보다 큰 수일수도있음. 
+    # -> 항상 1보다 크게 만들기 위해서.. (0인 경우에는 - 0.002,. 0.0007 이런식으로 나오니까, *10000을 할까?)
+    # inv = inv * 0.0001
     check_boot(inv)
     print('----inverse ca-------')
     print_ctxt(inv,10)
@@ -1812,10 +1829,16 @@ def isReal_1(y_cy, cy,context):
     tmp_ca = ca * inv
     
     check_boot(tmp_ca)
+    print('----tmp ca-------')
+    print_ctxt(tmp_ca,10)
 
     # ca = ca * ca
     res_ca = tmp_ca * tmp_ca
     check_boot(res_ca)
+    res_ca = res_ca * res_ca
+    check_boot(res_ca)
+    print('----res ca-------')
+    print_ctxt(res_ca,10)
 
     end = time.time()
     real_time += end-start
