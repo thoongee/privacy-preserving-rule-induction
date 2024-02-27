@@ -1,8 +1,8 @@
 {
-  "ndata": 150,
+  "ndata": 683,
   "n": 10,
-  "d": 4,
-  "t": 3,
-  "train_ndata": 100,
-  "test_ndata": 50
+  "d": 9,
+  "t": 2,
+  "train_ndata": 455,
+  "test_ndata": 228
 }
