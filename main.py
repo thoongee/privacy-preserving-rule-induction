@@ -1,8 +1,6 @@
 import module as mod
 import pandas as pd
-import numpy as np
 import heaan_sdk as heaan
-import random
 import os
 import json
 import sys
@@ -10,15 +8,16 @@ import time
 from pathlib import Path
 import warnings
 warnings.filterwarnings('ignore')
-import math
 
-logN=16
-os.environ["OMP_NUM_THREADS"] = "32"  # set the number of CPU threads to use for parallel regions : 32
+
+os.environ["OMP_NUM_THREADS"] = "32"  # set the number of CPU threads to use for parallel regions
+
+## HEaaN setting ##
+
 # set key_dir_path
 key_file_path = Path('./keys_FGb')
 # set parameter
 params = heaan.HEParameter.from_preset("FGb")
-
 # init context and load all keys
 context = heaan.Context(
     params,
@@ -28,7 +27,8 @@ context = heaan.Context(
 )
 
 num_slot = context.num_slots # 32768
-log_num_slot = context.log_slots
+log_num_slot = context.log_slots # 15
+logN = log_num_slot + 1
 
 a = sys.argv[2]
 a = a.split('/')[-1].split('.')[0]
@@ -48,7 +48,7 @@ mod.save_metadata_json_eval(df, train, json_path)
 with open(json_path + 'Metadata.json') as f:
     meta = json.load(f)
 
-# 확인하기
+# print metadata
 for i in ['ndata', 'train_ndata', 'test_ndata', 'n', 'd', 't']:
     print(f"{i} : ", meta[i])
 
@@ -66,7 +66,7 @@ for i in range(d):
 
 model_path = sys.argv[6] + '/' 
 
-print(" *** *** *** Training *** *** ***")
+print("========== Training start ==========")
 
 start = time.time()
 
@@ -74,20 +74,20 @@ mod.Rule_generation(model_path, train, train_ndata, n,d,t,logN,context,a)
 
 end = time.time()
 print()
-print('!!!!!!! Rule_generation time !!!!!!! ',f"{end - start:.8f} sec")
+print('========== Rule_generation time :',f"{end - start:.8f} sec")
 print()
 
 print()
-print(" *** *** *** inference *** *** ***")
+print("========== inference ==========")
 start = time.time()
 cy_hat_list = mod.inference(test, model_path,n,d,t,logN,context,a)
 end = time.time()
 print()
-print('!!!!!!! inference time !!!!!!! ',f"{end - start:.8f} sec")
+print('========== inference time :',f"{end - start:.8f} sec")
 print()
 test_res = mod.accurate(test_ori,cy_hat_list)
 ###
-print('test accuracy: ', round(test_res,8))
+print('========== Test data accuracy: ', round(test_res,8))
 
 
 

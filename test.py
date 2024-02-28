@@ -30,7 +30,7 @@ def main(data):
         train_ori.append(b3)
         test_ori.append(b4)
 
-    path = './log/0227_3/' # log folder path
+    path = './log/final2/' # log folder path
     mkdir = []
     
     a = data_file_path.split('/')
@@ -55,7 +55,7 @@ def main(data):
             print(f'{mkdir[x]}/{j+1}_{save_txt[i]}')
             os.system(f'python3 main.py {data_file_path} {train[i]} {test[i]} {train_ori[i]} {test_ori[i]} {mkdir[x]} {j+1} >> {mkdir[x]}/{j+1}_{save_txt[i]}')
     end = time.time()
-    print('♨♨♨♨♨♨ time ♨♨♨♨♨♨ ',f"{end - start:.5f} sec")
+    print(' time : ',f"{end - start:.5f} sec")
 
 if __name__ == "__main__":
     
