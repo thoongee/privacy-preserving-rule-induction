@@ -1,3 +1,6 @@
 keys_FGb/
 __pycache__/
 log/
+fold/BreastCancer/fold_split_1.ipynb
+fold/BreastCancer/fold_split_2.ipynb
+fold/BreastCancer/fold_split.ipynb
