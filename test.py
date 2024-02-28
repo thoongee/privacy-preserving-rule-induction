@@ -30,7 +30,7 @@ def main(data):
         train_ori.append(b3)
         test_ori.append(b4)
 
-    path = './log/final2/' # log folder path
+    path = './log/final/' # log folder path
     mkdir = []
     
     a = data_file_path.split('/')

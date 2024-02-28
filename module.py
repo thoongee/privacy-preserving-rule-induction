@@ -206,8 +206,8 @@ def Rule_generation(model_path, train, train_ndata, n,d,t,logN,context,qqq):
     m0 = heaan.Block(context,encrypted = False, data = [0]*num_slot)
     Rule = m0.encrypt(inplace=False)
     
-    # for i in range((n*d)):
-    for i in range(10):
+    for i in range((n*d)):
+    # for i in range(10):
         
         print('≫≫≫ feature: ',i)
         print()
@@ -963,6 +963,7 @@ def findMaxPos(c,context,logN,d,n,ndata):
 
 # in 4
 def findMax4(c, context, logN, d,n,ndata):
+    num_slot = context.num_slots
     
     check_boot(c)
     if (ndata==1): return c
