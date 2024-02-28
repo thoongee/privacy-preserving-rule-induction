@@ -19,7 +19,7 @@ def main(data):
     a = data_file_path.split('/')
     c = a[-1].split('.')
 
-    for j in range(1): # fold 0,1,2
+    for j in range(3): # fold 0,1,2
         b1 = './fold/' + a[2] + '/' + c[0] + f'_f{j}_train.csv'
         b2 = './fold/' + a[2] + '/' + c[0] + f'_f{j}_test_one.csv'
         b3 = './fold/' + a[2] + '/' + c[0] + f'_f{j}_train_no.csv'
