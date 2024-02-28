@@ -479,8 +479,6 @@ def findMinPos(c, context,logN,d,n,n_comp,num_slot):
     ## Need to generate a rotate sequence to choose 1 in a random position   
 
     c_out = selectRandomOnePos(c_red,context,n_comp)
-    print('==========selectRandomOnePos 결과암호문 ===================')
-    print_ctxt_1(c_out,d*n)
 
     return c_out
 
@@ -836,9 +834,7 @@ def findMin4(c, context, logN, d, n, n_comp,num_slot):
 
 # in 3
 def selectRandomOnePos(c_red,context,ndata):
-    print('=======selectRandomOnePOs 입력암호문 ==========')
-    print_ctxt_1(c_red,ndata)
-
+    num_slot = context.num_slots
     check_boot(c_red)
     m0 = heaan.Block(context,encrypted = False, data = [0]*num_slot)
     c_sel = m0.encrypt(inplace=False)
@@ -849,35 +845,24 @@ def selectRandomOnePos(c_red,context,ndata):
     empty_msg= heaan.Block(context,encrypted = False)
     ctmp2 = empty_msg.encrypt(inplace=False)
 
-    # m0_ = [1] + [0]*(num_slot-1)
-    # m0.set_data(m0_)
     m0_ = [1] + [0]*(num_slot-1)
     m0 = heaan.Block(context,encrypted = False, data = m0_)
     
     for l in rando:
         if (l>0):
-            # left_rotate(ctmp1,l,ctmp1,eval_)
-            # mult(c_sel,ctmp1,ctmp2,eval_)
-            # eval_.sub(ctmp1,ctmp2,ctmp1)
+            
             ctmp1 = ctmp1.__lshift__(l)
             ctmp2 = c_sel * ctmp1
             check_boot(ctmp2)
             ctmp1 = ctmp1 - ctmp2
             
-            # m0.to_device() 
-            # mult(ctmp1,m0,ctmp2,eval_)
-            # right_rotate(ctmp1,l,ctmp1,eval_)
-            # eval_.add(c_sel,ctmp2,c_sel)
+       
             ctmp2 = ctmp1 * m0
             check_boot(ctmp2)
             ctmp1 = ctmp1.__rshift__(l)
             c_sel = c_sel + ctmp2
         else:
-            # mult(c_sel,ctmp1,ctmp2,eval_)
-            # eval_.sub(ctmp1,ctmp2,ctmp1)
-            # m0.to_device() 
-            # mult(ctmp1,m0,ctmp2,eval_)
-            # eval_.add(c_sel,ctmp2,c_sel)
+      
             ctmp2 = c_sel * ctmp1
             check_boot(ctmp2)
             ctmp1 = ctmp1 - ctmp2
