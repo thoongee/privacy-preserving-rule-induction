@@ -35,7 +35,7 @@ def print_ctxt_1(c,size):
 
 def check_boot(x):
     if x.level==3:
-        print('####bootstrapping####')
+        # print('####bootstrapping####')
         x.bootstrap()
     return x
 
@@ -486,8 +486,6 @@ def findMinPos(c, context,logN,d,n,n_comp,num_slot):
 def findMin4(c, context, logN, d, n, n_comp,num_slot):
     
     if (n_comp==1): 
-        print("findMin4 ends..")
-        print_ctxt(c,1)
         return c
     check_boot(c)
     
@@ -1085,7 +1083,6 @@ def findMax4(c, context, logN, d,n,ndata):
 
     c_neg = c0.__neg__()
     c_neg = c_neg+mkall
-    print_ctxt(c_neg,10)
     
     ### When max=a
     ## ctmp1 = a>b
@@ -1360,14 +1357,7 @@ def data_update(g_list, c_sum, train_ctxt, label_ctxt,n,d,t,context):
 #7
 def change_rule(g_list, cy, n,d,t,context):
     num_slot = context.num_slots
-    real_time = 0
-    print('----cy----')
-    print_ctxt_1(cy,n*d)
-    
-    for i in range(n*d):
-        print('---g_list[',i,']:-------')
-        print_ctxt_1(g_list[i],n*d)
-    
+    real_time = 0    
 
     m0 = heaan.Block(context,encrypted = False, data=[0]*num_slot)
     encoding_rule = m0.encrypt(inplace=False)
