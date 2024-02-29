@@ -1579,7 +1579,6 @@ def accurate(df, cy_hat_list):
     try:
         for i in range(len(label_list)):
             
-            # cy_hat_list[i] = cy_hat_list[i]+1
             if label_list[i] == cy_hat_list[i]:
                 sum += 1
     except IndexError:
