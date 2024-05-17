@@ -1409,8 +1409,7 @@ def Rule_generation_multi(model_path, train, train_ndata, n,d,t,logN,context,qqq
     m0 = heaan.Block(context,encrypted = False, data = [0]*num_slot)
     Rule = m0.encrypt(inplace=False)
     
-    # for i in range((n*d)):
-    for i in range(10):
+    for i in range((n*d)):
         
         print('≫≫≫ feature: ',i, flush=True)
         print()
