@@ -70,7 +70,11 @@ print("========== Training start ==========")
 
 start = time.time()
 
-mod.Rule_generation(model_path, train, train_ndata, n,d,t,logN,context,a)
+
+if train_ndata < num_slot:
+    mod.Rule_generation(model_path, train, train_ndata, n,d,t,logN,context,a)
+else:
+    mod.Rule_generation_multi(model_path, train, train_ndata, n,d,t,logN,context,a)
 
 end = time.time()
 print()

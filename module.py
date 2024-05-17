@@ -17,7 +17,7 @@ import math
 def print_ctxt(c,size):
     m = c.decrypt(inplace=False)
     for i in range(size):
-        print(i,m[i])
+        print(i,m[i], flush=True)
         if (math.isnan(m[i].real)):
             print ("nan detected..stop")
     m = None
@@ -28,7 +28,7 @@ def print_ctxt_1(c,size):
         if np.abs(m[i].real) < 0.0001:
             pass
         else:
-            print(i,m[i])
+            print(i,m[i], flush=True)
         if (math.isnan(m[i].real)):
             print ("nan detected..stop")
     m = None
@@ -449,7 +449,8 @@ def findMinPos(c, context,logN,d,n,n_comp,num_slot):
 
 
     cmin = findMin4(c,context,logN,d,n,n_comp,num_slot)
-  
+    print('=========findMin4 output=============', flush=True)
+    print_ctxt(cmin,5)
     m100 = heaan.Block(context,encrypted = False, data = [1] + [0]*(num_slot-1))
 
     cmin = cmin * m100 # masking
@@ -477,7 +478,8 @@ def findMinPos(c, context,logN,d,n,n_comp,num_slot):
 
 
     ## Need to generate a rotate sequence to choose 1 in a random position   
-
+    print('============selectRandomOnePos input============', flush=True)
+    print_ctxt_1(c_red,n_comp)
     c_out = selectRandomOnePos(c_red,context,n_comp)
 
     return c_out
@@ -930,7 +932,8 @@ def findMaxPos(c,context,logN,d,n,ndata):
     num_slot = context.num_slots
    
     cmax = findMax4(c,context,logN,d,n,ndata)
-
+    print('========findMax4 output=============', flush=True)
+    print_ctxt(cmax,ndata)
   
     m100_ = [1] + [0]*(num_slot-1)
     m100 = heaan.Block(context,encrypted = False, data = m100_)
@@ -953,7 +956,8 @@ def findMaxPos(c,context,logN,d,n,ndata):
     c_red = c_red + 1
     c_red = c_red * 0.5
     check_boot(c_red)
-
+    print('========selectRandomOnePos input=============', flush=True)
+    print_ctxt_1(c_red,ndata)
     # Need to generate a rotate sequence to choose 1 in a random position
     c_out=selectRandomOnePos(c_red,context,ndata)
 
@@ -1377,6 +1381,447 @@ def change_rule(g_list, cy, n,d,t,context):
     print('≫≫≫ change_rule real time ',f"{real_time:.8f} sec")
     return encoding_rule
 
+# ============================================
+# =========== Training (Multi ctxt)===========
+# ============================================
+
+def Rule_generation_multi(model_path, train, train_ndata, n,d,t,logN,context,qqq):
+    
+    # if (data instance > 32768) && (n × d < 32768)
+    
+    num_slot = context.num_slots
+    
+    global attribute_value_pair
+    attribute_value_pair = []
+    for i in range(d):
+        for j in range(n):
+            attribute_value_pair.append('X'+ str(i+1) + '_' + str(j+1))
+    
+    total_ctxt = math.ceil(train_ndata/num_slot)
+    
+    start = time.time()
+    train_ctxt, label_ctxt = input_training_multi(total_ctxt, train, n,d,t,num_slot,context)
+    end = time.time()
+
+    print('≫≫≫ input_training time :',f"{end - start:.8f} sec", flush=True)
+    print()
+    
+    m0 = heaan.Block(context,encrypted = False, data = [0]*num_slot)
+    Rule = m0.encrypt(inplace=False)
+    
+    # for i in range((n*d)):
+    for i in range(10):
+        
+        print('≫≫≫ feature: ',i, flush=True)
+        print()
+        start = time.time()
+        frequency, fre_label = measure_frequency_multi(total_ctxt, train_ctxt, label_ctxt, n,d,t,num_slot,context) # ok
+        end = time.time()
+      
+        print('≫≫≫ measure_frequency time : ',f"{end - start:.8f} sec", flush=True)
+        print()
+        
+        start = time.time()
+        g_list = calculate_gini_multi(total_ctxt,train_ndata, frequency, fre_label, n,d,t,logN,num_slot,context)
+        end = time.time()
+
+        print('≫≫≫ calculate_Gini time : ',f"{end - start:.8f} sec", flush=True)
+        print()
+        
+        start = time.time()
+        y_cy, cy, c_sum = find_label_multi(total_ctxt,train_ndata, g_list, train_ctxt, label_ctxt,n,d,t,logN,num_slot,context)
+        end = time.time()
+        
+        print('========y_cy===========', flush=True)
+        print_ctxt_1(y_cy,t)
+        print('===========cy=============', flush=True)
+        print_ctxt_1(cy,t)
+     
+        print('≫≫≫ find_label time : ',f"{end - start:.8f} sec", flush=True)
+        print()
+        
+        start = time.time()
+        ca = isReal(y_cy, cy,context) 
+        end = time.time()
+        print('===========ca==========', flush=True)
+        print_ctxt_1(ca,t)
+        print()
+        print('≫≫≫ isReal time : ',f"{end - start:.8f} sec", flush=True)
+        print()
+        
+        start = time.time()
+        train_ctxt, label_ctxt = data_update_multi(total_ctxt, g_list, c_sum, train_ctxt,label_ctxt,n,d,t,context)
+        end = time.time()
+ 
+        print()
+        print('≫≫≫ data_update time : ',f"{end - start:.8f} sec", flush=True)
+        print()
+        
+        start = time.time()
+        encoding_rule = change_rule(g_list,cy,n,d,t,context)
+        end = time.time()
+        
+        print('===========encoding_rule===========', flush=True)
+        print_ctxt_1(encoding_rule,n*d*t)
+ 
+        print()
+        print('≫≫≫≫≫≫ change_rule time ≪≪≪≪≪≪ ',f"{end - start:.8f} sec", flush=True)
+        print()
+        
+        
+        start = time.time()
+        # If data corresponding to the rule exists, keep the rule
+        one_rule  = encoding_rule * ca
+        check_boot(one_rule)
+        print('==========one rule=============', flush=True)
+        print_ctxt_1(one_rule,n*d*t)
+        
+        Rule = Rule + one_rule
+        end = time.time()
+  
+        print('≫≫≫ rule_add time : ',f"{end - start:.8f} sec", flush=True)
+        print()
+    
+    start = time.time()
+    Rule.save(model_path + f'{qqq}_Rule.ctxt')
+    end = time.time()
+    print()
+    print('========== Total rule ==========', flush=True)
+    print_ctxt_1(Rule,n*d*t)
+
+    print()
+    print('≫≫≫ rule_save time : ',f"{end - start:.8f} sec", flush=True)
+    print()
+
+
+#1
+def input_training_multi(total_ctxt,train, n,d,t,num_slot,context):
+    print(' --- input_training --- ', flush=True)
+    # training data encryption
+    # Encrypt the ciphertext for each feature
+    
+    # if (data instance < 32768) && (n × d < 32768)
+    
+    # X1_1 X1_2 X2_1 X2_2 X3_1 X3_2 label_1 label_2
+    #   1    0    1    0    0    1      0       1
+    #   0    1    0    1    0    1      1       0
+    #   1    0    0    1    1    0      1       0
+    #   0    1    1    0    1    0      1       0
+    #   1    0    0    1    0    1      0       1
+    
+    # X1_1 : 1 0 1 0 1
+    # X1_2 : 0 1 0 1 0
+
+    train_ctxt = []
+    for i in range(n*d):
+        tmp_list=[]
+        for j in range(total_ctxt):
+            x = train[attribute_value_pair[i]][j*num_slot:(j+1)*num_slot].values.tolist() 
+            x = x + [0]*(num_slot-len(x))
+            # mess = heaan.Message(logN-1)
+            # mess.set_data(x)
+            # x_tmp = heaan.Ciphertext(context)
+            # enc.encrypt(mess, pk, x_tmp)
+            mess = heaan.Block(context, data = x, encrypted=False)
+            x_tmp = mess.encrypt(inplace=False)
+            tmp_list.append(x_tmp)
+            
+        train_ctxt.append(tmp_list)
+        
+    label_ctxt = []
+    for i in range(t):
+        tmp_list = []
+        for j in range(total_ctxt):
+            x = train['label_' + str(i+1)][j*num_slot:(j+1)*num_slot].values.tolist() 
+            x = x + [0]*(num_slot-len(x))
+            # mess = heaan.Message(logN-1)
+            # mess.set_data(x)
+            
+            # x_tmp = heaan.Ciphertext(context)
+            # enc.encrypt(mess, pk, x_tmp)
+            # x_tmp.to_device()
+            mess = heaan.Block(context, data = x, encrypted=False)
+            x_tmp = mess.encrypt(inplace=False)
+            
+            tmp_list.append(x_tmp)
+            
+        label_ctxt.append(tmp_list)
+        
+        # if t > 3:
+        #     x_tmp = x_tmp * (1/t)
+        #     check_boot(x_tmp)
+    
+    return train_ctxt, label_ctxt
+#2
+def measure_frequency_multi(total_ctxt, train_ctxt, label_ctxt, n,d,t,num_slot,context):
+    
+    # Calculating frequency for computing the Gini index
+    
+    real_time = 0
+    
+    m0 = heaan.Block(context,encrypted = False, data = [0]*num_slot)
+   
+    m100 = heaan.Block(context,encrypted = False, data = [1] + [0]*(num_slot-1))
+
+    fre_tmp = m0.encrypt(inplace=False)
+    
+    frequency = []
+    
+    etc_time = 0
+    start = time.time()
+    for i in range(t):
+        start_1 = time.time()
+ 
+        fre_label = m0.encrypt(inplace=False)
+        end_1 = time.time()
+        etc_time += end_1 - start_1
+        
+        for j in range(n*d):
+            start_1 = time.time()
+            # tmp = heaan.Ciphertext(context)
+            # enc.encrypt(m0, pk, tmp)
+            # tmp.to_device()
+            tmp = m0.encrypt(inplace=False)
+            end_1 = time.time()
+            etc_time += end_1 - start_1
+            for k in range(total_ctxt):
+                fre_tmp = label_ctxt[i][k] * train_ctxt[j][k]
+                check_boot(fre_tmp)
+
+                # eval.left_rotate_reduce(fre_tmp, 1, num_slot, fre_tmp)
+                fre_tmp = left_rotate_reduce(context,fre_tmp,num_slot,1)
+
+                # masking
+                fre_tmp = fre_tmp * m100
+                check_boot(fre_tmp)
+                
+                # eval.add(fre_tmp, tmp, tmp)
+                tmp = tmp + fre_tmp
+
+            # right_rotate(tmp, j, tmp, eval)
+            tmp = tmp.__rshift__(j)
+            # eval.add(fre_label, tmp, fre_label)
+            fre_label = fre_label + tmp
+    
+        frequency.append(fre_label)
+    end = time.time()
+    real_time += (end-start) - etc_time
+
+    # Count the total frequency
+    total_fre = m0.encrypt(inplace=False)
+    
+    start = time.time()
+    for i in range(t):    
+        total_fre = total_fre + frequency[i]
+    
+    end = time.time()
+    real_time += end-start
+    print('≫≫≫ measure_frequency real time ',f"{real_time:.8f} sec", flush=True)
+    
+    return frequency, total_fre
+#3
+def calculate_gini_multi(total_ctxt,train_ndata, frequency, fre_label, n,d,t,logN,num_slot,context):
+
+    # Calculate the Gini index using the measured frequencies
+    
+    real_time = 0 
+    
+    m0 = heaan.Block(context,encrypted = False, data = [0]*num_slot)
+    
+    start = time.time()
+    tmp = fre_label * (1/train_ndata)
+    check_boot(tmp)
+
+    square_total = tmp * tmp
+    check_boot(square_total)
+
+    end = time.time()
+    real_time += end-start
+
+    square_label = m0.encrypt(inplace=False)
+    start = time.time()
+    for i in range(t):
+        denom = train_ndata * total_ctxt
+        tmp = frequency[i] * (1/denom) # greater_than_zero 대신, train_ndata*total_ctxt로 나눠서 1보다 작은값으로 만들기
+        check_boot(tmp)
+ 
+        gini = tmp*tmp
+        check_boot(gini)
+
+        square_label = square_label + gini
+
+    gini = square_total - square_label
+
+
+    min_gini = gini
+    
+    print('========findMinPos input===========', flush=True)
+    print_ctxt(min_gini,n*d)
+    g = findMinPos(min_gini, context,logN,d,n,n*d,num_slot)
+    print('========findMinPos output===========', flush=True)
+    print_ctxt_1(g,n*d)
+    end = time.time()
+    real_time += end-start
+    
+    n_d_mask = heaan.Block(context,encrypted = False, data = [1]*n*d + [0]*(num_slot-n*d))
+
+    start = time.time()
+    
+    g = g * n_d_mask # masking
+    check_boot(g)
+    end = time.time()
+    real_time += end-start
+ 
+    
+    g_list = []
+    etc_time = 0
+    start = time.time()
+    for i in range(n*d):
+        start_1 = time.time()
+        pick_ = [0]*i + [1] + [0]*(num_slot-(i+1))
+
+        pick = heaan.Block(context,encrypted = False, data = pick_)
+        
+        end_1 = time.time()
+        etc_time += end_1 - start_1
+        tmp = g * pick
+        check_boot(tmp)
+
+        tmp = left_rotate_reduce(context,tmp,num_slot,1)
+        
+        g_list.append(tmp)
+    end = time.time()
+    real_time += (end-start)-etc_time
+    print('≫≫≫ calculate_Gini real time ',f"{real_time:.8f} sec")
+    return g_list
+
+def find_label_multi(total_ctxt, train_ndata, g_list, train_ctxt, label_ctxt,n,d,t,logN,num_slot,context):
+ 
+    real_time = 0 
+ 
+    m0 = heaan.Block(context,encrypted = False, data = [0]*num_slot)
+    m100 = heaan.Block(context,encrypted = False, data = [1] + [0]*(num_slot-1))
+    
+    empty_msg= heaan.Block(context,encrypted = False)
+    tmp = empty_msg.encrypt(inplace=False) 
+
+    # c_sum = m0.encrypt(inplace=False)
+    y_cy = m0.encrypt(inplace=False)
+        
+    start = time.time()
+    sum_list = []
+    etc_time = 0
+    for j in range(total_ctxt):
+        start_1 = time.time()
+        c_sum = m0.encrypt(inplace=False)
+        end_1 = time.time()
+        etc_time += end_1 - start_1
+        for i in range(n*d):
+            tmp = g_list[i] * train_ctxt[i][j]
+            check_boot(tmp)
+            c_sum = tmp + c_sum
+        sum_list.append(c_sum)
+
+    # for i in range(t):
+    #     c_sum = m0.encrypt(inplace=False)
+        
+    #     tmp = c_sum * label_ctxt[i]
+    #     check_boot(tmp)
+
+    #     tmp_after_rot = left_rotate_reduce(context,tmp,train_ndata,1) # train_ndata : the number of train data row
+    #     tmp_after_rot = tmp_after_rot * m100
+    #     check_boot(tmp_after_rot)
+
+    #     tmp_after_rot = tmp_after_rot.__rshift__(i)
+    #     y_cy = tmp_after_rot + y_cy
+    for i in range(t):
+        start_1 = time.time()
+        c_sum = m0.encrypt(inplace=False)
+        end_1 = time.time()
+        etc_time += end_1 - start_1
+        for j in range(total_ctxt):
+            # mult(sum_list[j], label_ctxt[i][j], tmp, eval)
+            # eval.add(tmp, c_sum, c_sum)
+            tmp = sum_list[j] * label_ctxt[i][j]
+            check_boot(tmp)
+            c_sum = c_sum + tmp
+        c_sum = left_rotate_reduce(context,c_sum,num_slot,1) # 다 더해서 몇개 있는지 구함
+        # mult(c_sum, m100, tmp, eval)
+        # right_rotate(tmp, i, tmp, eval)
+        # eval.add(tmp, y_cy, y_cy)
+        c_sum = c_sum * m100
+        check_boot(c_sum)
+        c_sum = c_sum.__rshift__(i)
+        y_cy = y_cy + c_sum
+
+    target = y_cy
+    
+    # denom = train_ndata*total_ctxt
+    target = target * (1/train_ndata) 
+    check_boot(target)
+
+    print('========findMaxPos input=============')
+    print_ctxt(target,t)
+    cy = findMaxPos(target,context,logN,d,n,t) # position of the label value that occurs most frequently among the slots (where only one out of t slots is '1')
+    check_boot(cy)
+    print('========findMaxPos output=============')
+    print_ctxt(cy,t)
+
+    end = time.time()
+    real_time += end-start
+
+    print('≫≫≫ find_label time: ',f"{real_time:.8f} sec")
+    print()
+ 
+    return y_cy, cy, sum_list
+
+def data_update_multi(total_ctxt,g_list, c_sum, train_ctxt, label_ctxt,n,d,t,context):
+
+    # Update the data to prevent the selection of the same attribute value pair
+    
+    real_time = 0
+    num_slot = context.num_slots
+    
+    m0 = heaan.Block(context,encrypted = False, data=[0]*num_slot)
+    m1 = heaan.Block(context,encrypted = False, data=[1]*num_slot)
+    ctxt_one = m1.encrypt(inplace=False)
+    
+        
+    start = time.time()
+    tmp_sub = m0.encrypt(inplace=False)
+    
+    sum_list = []
+    start = time.time()
+    for i in range(total_ctxt):
+        tmp_sub = ctxt_one - c_sum[i]
+        check_boot(tmp_sub)
+        sum_list.append(tmp_sub)
+    
+    for k in range(t):
+        for i in range(total_ctxt):
+            label_ctxt[k][i] = label_ctxt[k][i] * sum_list[i]
+            check_boot(label_ctxt[k][i])
+    
+    for j in range(n*d):
+        for i in range(total_ctxt):
+            # mult(train_ctxt[j][i], sum_list[i], train_ctxt[j][i], eval)
+            train_ctxt[j][i] = train_ctxt[j][i] * sum_list[i]
+            check_boot(train_ctxt[j][i])
+            
+
+    for i in range(n*d):
+        for j in range(total_ctxt):
+            tmp_sub = ctxt_one - train_ctxt[i][j]
+            tmp_rot = tmp_sub * g_list[i]
+            check_boot(tmp_rot)
+            train_ctxt[i][j] = train_ctxt[i][j] + tmp_rot
+
+    end = time.time()
+    real_time += end-start
+
+    print('≫≫≫ data_update real time ',f"{real_time:.8f} sec", flush=True)
+    
+    return train_ctxt, label_ctxt
 
 # ============================================
 # ================ Inference =================
@@ -1391,7 +1836,7 @@ def inference(test, model_path,d,n,t,logN,context,qqq):
 
     end = time.time()
     print()
-    print('≫≫≫ load_rule time : ',f"{end - start:.8f} sec")
+    print('≫≫≫ load_rule time : ',f"{end - start:.8f} sec", flush=True)
     print()
     
     test_ = test.copy()
@@ -1411,7 +1856,7 @@ def inference(test, model_path,d,n,t,logN,context,qqq):
     cy_hat_list=[]
 
     for i in range(test_.shape[0]):
-        print('≫≫≫ row : ',i+1)
+        print('≫≫≫ row : ',i+1, flush=True)
         
         x = test_.iloc[i].values.tolist()
         
@@ -1419,7 +1864,7 @@ def inference(test, model_path,d,n,t,logN,context,qqq):
         x_tmp = make_input(x, n, d, t, num_slot, context)
         end = time.time()
 
-        print('≫≫≫ make_input time : ',f"{end - start:.8f} sec")
+        print('≫≫≫ make_input time : ',f"{end - start:.8f} sec", flush=True)
         
         start_1row = time.time()
         start = time.time()
@@ -1427,13 +1872,13 @@ def inference(test, model_path,d,n,t,logN,context,qqq):
         end = time.time()
 
         print()
-        print('≫≫≫ make_ccur time : ',f"{end - start:.8f} sec")
+        print('≫≫≫ make_ccur time : ',f"{end - start:.8f} sec", flush=True)
         
         start = time.time()
         target = find_y_value(ccur,cnt_y,d,n,t,num_slot,context)
         end = time.time()
         print()
-        print('≫≫≫≫≫≫ find_y_value time ≪≪≪≪≪≪ ',f"{end - start:.8f} sec")
+        print('≫≫≫≫≫≫ find_y_value time ≪≪≪≪≪≪ ',f"{end - start:.8f} sec", flush=True)
         end_1row = time.time()
  
 
@@ -1447,7 +1892,7 @@ def inference(test, model_path,d,n,t,logN,context,qqq):
         end = time.time()
       
         print()
-        print('≫≫≫ find_max_y_plain time : ',f"{end - start:.8f} sec")
+        print('≫≫≫ find_max_y_plain time : ',f"{end - start:.8f} sec", flush=True)
         print()
         
         for j in range(t):
@@ -1456,7 +1901,7 @@ def inference(test, model_path,d,n,t,logN,context,qqq):
             else:
                 cy_hat_list.append(j+1)
 
-        print('======= predict value: ',cy_hat_list)
+        print('======= predict value: ',cy_hat_list, flush=True)
         total_eval += round(end_1row - start_1row, 8)
         
         print('≫≫≫ 1 row evaluation time : ',f"{end_1row - start_1row:.8f} sec")
