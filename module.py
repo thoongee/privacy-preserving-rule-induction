@@ -1517,10 +1517,6 @@ def input_training_multi(total_ctxt,train, n,d,t,num_slot,context):
         for j in range(total_ctxt):
             x = train[attribute_value_pair[i]][j*num_slot:(j+1)*num_slot].values.tolist() 
             x = x + [0]*(num_slot-len(x))
-            # mess = heaan.Message(logN-1)
-            # mess.set_data(x)
-            # x_tmp = heaan.Ciphertext(context)
-            # enc.encrypt(mess, pk, x_tmp)
             mess = heaan.Block(context, data = x, encrypted=False)
             x_tmp = mess.encrypt(inplace=False)
             tmp_list.append(x_tmp)
@@ -1533,12 +1529,7 @@ def input_training_multi(total_ctxt,train, n,d,t,num_slot,context):
         for j in range(total_ctxt):
             x = train['label_' + str(i+1)][j*num_slot:(j+1)*num_slot].values.tolist() 
             x = x + [0]*(num_slot-len(x))
-            # mess = heaan.Message(logN-1)
-            # mess.set_data(x)
             
-            # x_tmp = heaan.Ciphertext(context)
-            # enc.encrypt(mess, pk, x_tmp)
-            # x_tmp.to_device()
             mess = heaan.Block(context, data = x, encrypted=False)
             x_tmp = mess.encrypt(inplace=False)
             
@@ -1546,10 +1537,7 @@ def input_training_multi(total_ctxt,train, n,d,t,num_slot,context):
             
         label_ctxt.append(tmp_list)
         
-        # if t > 3:
-        #     x_tmp = x_tmp * (1/t)
-        #     check_boot(x_tmp)
-    
+
     return train_ctxt, label_ctxt
 #2
 def measure_frequency_multi(total_ctxt, train_ctxt, label_ctxt, n,d,t,num_slot,context):
@@ -1577,9 +1565,6 @@ def measure_frequency_multi(total_ctxt, train_ctxt, label_ctxt, n,d,t,num_slot,c
         
         for j in range(n*d):
             start_1 = time.time()
-            # tmp = heaan.Ciphertext(context)
-            # enc.encrypt(m0, pk, tmp)
-            # tmp.to_device()
             tmp = m0.encrypt(inplace=False)
             end_1 = time.time()
             etc_time += end_1 - start_1
@@ -1587,19 +1572,17 @@ def measure_frequency_multi(total_ctxt, train_ctxt, label_ctxt, n,d,t,num_slot,c
                 fre_tmp = label_ctxt[i][k] * train_ctxt[j][k]
                 check_boot(fre_tmp)
 
-                # eval.left_rotate_reduce(fre_tmp, 1, num_slot, fre_tmp)
                 fre_tmp = left_rotate_reduce(context,fre_tmp,num_slot,1)
 
                 # masking
                 fre_tmp = fre_tmp * m100
                 check_boot(fre_tmp)
-                
-                # eval.add(fre_tmp, tmp, tmp)
+
                 tmp = tmp + fre_tmp
 
-            # right_rotate(tmp, j, tmp, eval)
+
             tmp = tmp.__rshift__(j)
-            # eval.add(fre_label, tmp, fre_label)
+
             fre_label = fre_label + tmp
     
         frequency.append(fre_label)
@@ -1653,12 +1636,9 @@ def calculate_gini_multi(total_ctxt,train_ndata, frequency, fre_label, n,d,t,log
 
 
     min_gini = gini
-    
-    print('========findMinPos input===========', flush=True)
-    print_ctxt(min_gini,n*d)
+
     g = findMinPos(min_gini, context,logN,d,n,n*d,num_slot)
-    print('========findMinPos output===========', flush=True)
-    print_ctxt_1(g,n*d)
+
     end = time.time()
     real_time += end-start
     
@@ -1704,7 +1684,6 @@ def find_label_multi(total_ctxt, train_ndata, g_list, train_ctxt, label_ctxt,n,d
     empty_msg= heaan.Block(context,encrypted = False)
     tmp = empty_msg.encrypt(inplace=False) 
 
-    # c_sum = m0.encrypt(inplace=False)
     y_cy = m0.encrypt(inplace=False)
         
     start = time.time()
@@ -1721,18 +1700,6 @@ def find_label_multi(total_ctxt, train_ndata, g_list, train_ctxt, label_ctxt,n,d
             c_sum = tmp + c_sum
         sum_list.append(c_sum)
 
-    # for i in range(t):
-    #     c_sum = m0.encrypt(inplace=False)
-        
-    #     tmp = c_sum * label_ctxt[i]
-    #     check_boot(tmp)
-
-    #     tmp_after_rot = left_rotate_reduce(context,tmp,train_ndata,1) # train_ndata : the number of train data row
-    #     tmp_after_rot = tmp_after_rot * m100
-    #     check_boot(tmp_after_rot)
-
-    #     tmp_after_rot = tmp_after_rot.__rshift__(i)
-    #     y_cy = tmp_after_rot + y_cy
     for i in range(t):
         start_1 = time.time()
         c_sum = m0.encrypt(inplace=False)
@@ -1745,9 +1712,7 @@ def find_label_multi(total_ctxt, train_ndata, g_list, train_ctxt, label_ctxt,n,d
             check_boot(tmp)
             c_sum = c_sum + tmp
         c_sum = left_rotate_reduce(context,c_sum,num_slot,1) # 다 더해서 몇개 있는지 구함
-        # mult(c_sum, m100, tmp, eval)
-        # right_rotate(tmp, i, tmp, eval)
-        # eval.add(tmp, y_cy, y_cy)
+
         c_sum = c_sum * m100
         check_boot(c_sum)
         c_sum = c_sum.__rshift__(i)
@@ -1755,16 +1720,11 @@ def find_label_multi(total_ctxt, train_ndata, g_list, train_ctxt, label_ctxt,n,d
 
     target = y_cy
     
-    # denom = train_ndata*total_ctxt
     target = target * (1/train_ndata) 
     check_boot(target)
 
-    print('========findMaxPos input=============')
-    print_ctxt(target,t)
     cy = findMaxPos(target,context,logN,d,n,t) # position of the label value that occurs most frequently among the slots (where only one out of t slots is '1')
     check_boot(cy)
-    print('========findMaxPos output=============')
-    print_ctxt(cy,t)
 
     end = time.time()
     real_time += end-start
