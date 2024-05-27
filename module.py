@@ -1623,8 +1623,7 @@ def calculate_gini_multi(total_ctxt,train_ndata, frequency, fre_label, n,d,t,log
     square_label = m0.encrypt(inplace=False)
     start = time.time()
     for i in range(t):
-        denom = train_ndata * total_ctxt
-        tmp = frequency[i] * (1/denom) # greater_than_zero 대신, train_ndata*total_ctxt로 나눠서 1보다 작은값으로 만들기
+        tmp = frequency[i] * (1/train_ndata) # make the frequency less than 1
         check_boot(tmp)
  
         gini = tmp*tmp
