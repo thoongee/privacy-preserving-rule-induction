@@ -207,7 +207,6 @@ def Rule_generation(model_path, train, train_ndata, n,d,t,logN,context,qqq):
     Rule = m0.encrypt(inplace=False)
     
     for i in range((n*d)):
-    # for i in range(10):
         
         print('≫≫≫ feature: ',i)
         print()
@@ -372,6 +371,7 @@ def measure_frequency(train_ndata, train_ctxt, label_ctxt, n,d,t,num_slot,contex
     print('≫≫≫ measure_frequency real time ',f"{real_time:.8f} sec")
     
     return frequency, total_fre
+
 #3
 def calculate_Gini(train_ndata, frequency, fre_label, n,d,t,logN,num_slot,context):
 
@@ -1623,7 +1623,8 @@ def calculate_gini_multi(total_ctxt,train_ndata, frequency, fre_label, n,d,t,log
     square_label = m0.encrypt(inplace=False)
     start = time.time()
     for i in range(t):
-        denom = train_ndata * total_ctxt
+        # denom = train_ndata * total_ctxt
+        denom = train_ndata
         tmp = frequency[i] * (1/denom) # greater_than_zero 대신, train_ndata*total_ctxt로 나눠서 1보다 작은값으로 만들기
         check_boot(tmp)
  
